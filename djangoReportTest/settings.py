@@ -74,6 +74,7 @@ TEMPLATES = [
     },
 ]
 
+
 WSGI_APPLICATION = 'djangoReportTest.wsgi.application'
 
 # Database
