@@ -1,17 +1,23 @@
-import io
-
-import pandas
-from django.http import HttpResponse
 from drf_spectacular.utils import extend_schema, OpenApiExample
 from rest_framework import status
+from rest_framework.viewsets import ModelViewSet
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.viewsets import ViewSet
 
-from report.api.serializers import UploadFileSerializer
-from report.services.generate_excel_file import GenerateExcelFile
+from report.api.serializers import UploadFileSerializer, ReportSerializer
+from report.models import Report
+from report.services.process_request import create_excel_response
 
 
 class ReportViewSet(ViewSet):
+    """
+        ViewSet для загрузки файла и генерации отчета.
+
+        Методы:
+            post(request):
+                Обрабатывает POST-запрос для загрузки файла,
+                выполнения вычислений и возврата отчета в формате Excel.
+        """
     parser_classes = (MultiPartParser, FormParser)
     serializer_class = UploadFileSerializer
 
@@ -58,10 +64,19 @@ class ReportViewSet(ViewSet):
     def post(self, request):
         serializer = UploadFileSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        file = request.FILES['file']
-        df = pandas.read_excel(io.BytesIO(file.read()))
-        solver = GenerateExcelFile(data_frame=df, filter_date=serializer.validated_data.get('time_filter'))
-        bio = solver.generate_excel_file()
-        response = HttpResponse(bio, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-        response['Content-Disposition'] = 'attachment; filename=myfile.xlsx'
+        time_filter = serializer.validated_data.get('time_filter')
+        response = create_excel_response(request=request, time_filter=time_filter)
         return response
+
+
+class ReportListView(ModelViewSet):
+    """
+    Эндпоинт для получения всех данных отчетов.
+
+    Attributes:
+        queryset: Запрос к модели Report для получения всех данных отчетов.
+        serializer_class: Класс сериализатора для отчетов.
+    """
+    queryset = Report.objects.all()
+    serializer_class = ReportSerializer
+    http_method_names = ['get']
