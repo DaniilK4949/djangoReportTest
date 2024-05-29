@@ -76,4 +76,5 @@ ENV DJANG_ENV=production
 COPY --from=builder-base $PYSETUP_PATH $PYSETUP_PATH
 COPY . .
 WORKDIR .
+RUN chmod +x entrypoint.sh
 ENTRYPOINT ["./entrypoint.sh"]
